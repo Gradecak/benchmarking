@@ -1,0 +1,17 @@
+hash: e005ba83f5297a93451c8b900973dfff3b65fded84b2ee63a4e3b2573d87479a
+updated: 2019-05-01T18:11:45.39452346+02:00
+imports:
+- name: github.com/konsorten/go-windows-terminal-sequences
+  version: 5c8c8bd35d3832f5d134ae1e1e375b69a4d25242
+- name: github.com/sirupsen/logrus
+  version: a67f783a3814b8729bd2dac5780b5f78f8dbd64d
+- name: golang.org/x/crypto
+  version: de0752318171da717af4ce24d0a2e8626afaeb11
+  subpackages:
+  - ssh/terminal
+- name: golang.org/x/sys
+  version: c488ab1dd8481ef762f96a79a9577c27825be697
+  subpackages:
+  - unix
+  - windows
+testImports: []

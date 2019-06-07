@@ -1,3 +1,5 @@
 package: github.com/gradecak/benchmark
 import:
 - package: github.com/sirupsen/logrus
+- package: github.com/urfave/cli
+  version: ~1.20.0

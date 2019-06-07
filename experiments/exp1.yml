@@ -1,0 +1,9 @@
+url: "http://127.0.0.1:8080"
+expName: "throughput"
+wfSpec: "specs/1task.wf.yml"
+outputFile: "results/exp1.csv"
+expParams:
+  throughput:
+    - 10
+    - 100
+    - 200

@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"github.com/fission/fission-workflows/pkg/apiserver/httpclient"
-	"github.com/fission/fission-workflows/pkg/parse"
-	"github.com/fission/fission-workflows/pkg/types"
-	"github.com/fission/fission-workflows/pkg/types/typedvalues"
+	"github.com/gradecak/fission-workflows/pkg/apiserver/httpclient"
+	"github.com/gradecak/fission-workflows/pkg/parse"
+	"github.com/gradecak/fission-workflows/pkg/types"
+	"github.com/gradecak/fission-workflows/pkg/types/typedvalues"
 	"github.com/sirupsen/logrus"
 	"math/rand"
 	"net/http"
@@ -49,6 +49,7 @@ func NewFWClient(url string) *FWClient {
 
 func (c FWClient) Invoke(ctx Context, wfID string) (*Result, error) {
 	spec := types.NewWorkflowInvocationSpec(wfID, time.Now().Add(defaultTimeout))
+	// spec := types.NewWorkflowInvocationSpec(wfID)
 	spec.Inputs = map[string]*typedvalues.TypedValue{}
 	spec.ConsentId = "test" //RandomString(5)
 	result := &Result{}

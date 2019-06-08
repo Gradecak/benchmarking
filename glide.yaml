@@ -3,3 +3,5 @@ import:
 - package: github.com/sirupsen/logrus
 - package: github.com/urfave/cli
   version: ~1.20.0
+- package: github.com/gradecak/fission-workflows
+  version: ^0.6.1

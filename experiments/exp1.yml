@@ -4,6 +4,13 @@ wfSpec: "specs/1task.wf.yml"
 outputFile: "results/exp1.csv"
 expParams:
   throughput:
-    - 10
     - 100
+    - 120
+    - 130
+    - 140
+    - 150
+    - 160
+    - 170
+    - 180
+    - 190
     - 200

@@ -66,11 +66,11 @@ func commandContext(fn func(c Context) error) func(c *cli.Context) error {
 		case 0:
 			logrus.SetLevel(logrus.ErrorLevel)
 		case 1:
-			logrus.SetLevel(logrus.InfoLevel)
+			logrus.SetLevel(logrus.DebugLevel)
 		default:
 			fallthrough
 		case 2:
-			logrus.SetLevel(logrus.DebugLevel)
+			logrus.SetLevel(logrus.InfoLevel)
 		}
 		return fn(Context{c})
 	}

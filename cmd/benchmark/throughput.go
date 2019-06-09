@@ -13,6 +13,7 @@ type ThroughputExp struct {
 	throughputBrackets []int  // number of runs to perform per client
 	wfID               string // Id of workflow to execute
 	client             *FWClient
+	url                string
 }
 
 func parseThroughputBrackets(brackets []interface{}) ([]int, error) {
@@ -43,6 +44,7 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 	}
 	t.throughputBrackets = treatments
 	t.client = NewFWClient(cnf.Url)
+	t.url = cnf.Url
 	wfID, err := t.client.setupWF(Context{}, cnf.WfSpec)
 	if err != nil {
 		return nil, err
@@ -55,12 +57,12 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 func (t ThroughputExp) Run(ctx Context) ([][]string, error) {
 	output := [][]string{[]string{"latency", "qps"}}
 	for _, throughput := range t.throughputBrackets {
+		logrus.Infof("Starting invocations for %v for throughput bracket\n", throughput)
 		tick := time.NewTicker(time.Duration(1e9 / throughput))
 		resultChan := make(chan *Result, throughput*3)
 		c, ca := context.WithDeadline(ctx, time.Now().Add(3*time.Second))
 		wg := sync.WaitGroup{}
 		defer ca()
-
 		// make the invocation
 		func() {
 			for {
@@ -72,21 +74,26 @@ func (t ThroughputExp) Run(ctx Context) ([][]string, error) {
 				wg.Add(1)
 				go func(w *sync.WaitGroup) {
 					defer w.Done()
-					r, err := t.client.Invoke(ctx, t.wfID)
+					client := NewFWClient(t.url)
+					r, err := client.Invoke(ctx, t.wfID)
 					if err != nil {
-						logrus.Error("Invocation Returned Error")
+						logrus.Error(err)
 						return
 					}
 					resultChan <- r
 				}(&wg)
 			}
 		}()
+		logrus.Info("Waiting For goroutines...\n")
 		wg.Wait()
 		close(resultChan)
+		logrus.Info("Done...\n")
 
+		logrus.Infof("Collecting results for %v throughput bracket...\n", throughput)
 		for r := range resultChan {
 			output = append(output, []string{strconv.FormatInt(int64(r.duration), 10), strconv.Itoa(throughput)})
 		}
+		time.Sleep(time.Second)
 
 	}
 	return output, nil

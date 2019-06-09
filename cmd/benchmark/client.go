@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/gradecak/fission-workflows/pkg/apiserver/httpclient"
 	"github.com/gradecak/fission-workflows/pkg/parse"
 	"github.com/gradecak/fission-workflows/pkg/types"
@@ -58,7 +57,7 @@ func (c FWClient) Invoke(ctx Context, wfID string) (*Result, error) {
 	wfi, err := c.invocation.InvokeSync(ctx, spec)
 	result.timestamp = time.Now()
 	if err != nil {
-		return nil, errors.New("Failed to invoke workflow")
+		return nil, err
 	}
 	result.duration = result.timestamp.Sub(start)
 	wiStatus := wfi.GetStatus()

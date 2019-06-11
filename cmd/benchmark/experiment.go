@@ -14,7 +14,7 @@ var exps = map[string]ExperimentConstructor{
 type ExperimentConstructor = func(*ExperimentConf) (Experiment, error)
 
 type Experiment interface {
-	Run(Context) ([][]string, error)
+	Run(Context) (interface{}, error)
 }
 
 type ExperimentConf struct {

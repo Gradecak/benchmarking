@@ -33,6 +33,7 @@ func main() {
 		}
 		logrus.Info("Setting up Experiment Config...")
 		return Run(ctx, exp, conf.OutputFile)
+		return nil
 	})
 	app.Run(os.Args)
 }

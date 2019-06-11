@@ -5,3 +5,9 @@ import:
   version: ~1.20.0
 - package: github.com/gradecak/fission-workflows
   version: ^0.6.1
+- package: github.com/prometheus/common
+  version: ^0.4.1
+  subpackages:
+  - expfmt
+- package: github.com/prometheus/prom2json
+  version: ^1.2.1

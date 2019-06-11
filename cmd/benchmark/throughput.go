@@ -3,10 +3,34 @@ package main
 import (
 	"context"
 	"errors"
+	"github.com/gradecak/benchmark/pkg/collector"
+	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
-	"strconv"
-	"sync"
+	// "strconv"
+	// "sync"
 	"time"
+)
+
+const (
+	BRACKET_DURATION = time.Minute * 1
+)
+
+var (
+	col = collector.New(
+		[]*collector.Collection{
+			&collector.Collection{
+				Endpoint: "http://localhost:8080/metrics",
+				Interest: []string{
+					"system_controller_exec_duration",
+					"go_memstats_alloc_bytes",
+					"workflows_scheduler_eval_time",
+					"workflows_fnenv_functions_active",
+				},
+				Output: "data/fw_throughput.json",
+			},
+		},
+		collector.DEFAULT_RATE,
+	)
 )
 
 type ThroughputExp struct {
@@ -14,6 +38,12 @@ type ThroughputExp struct {
 	wfID               string // Id of workflow to execute
 	client             *FWClient
 	url                string
+}
+
+type ThroughputResult struct {
+	ThroughputBracket int
+	Timestamp         time.Time
+	State             *prom2json.Family
 }
 
 func parseThroughputBrackets(brackets []interface{}) ([]int, error) {
@@ -51,50 +81,46 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 	}
 	t.wfID = wfID
 	return t, nil
-
 }
 
-func (t ThroughputExp) Run(ctx Context) ([][]string, error) {
-	output := [][]string{[]string{"latency", "qps"}}
+func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
+	// output := make([]ThroughputResult, len(t.throughputBrackets))
+	output := []ThroughputResult{}
 	for _, throughput := range t.throughputBrackets {
 		logrus.Infof("Starting invocations for %v for throughput bracket\n", throughput)
 		tick := time.NewTicker(time.Duration(1e9 / throughput))
-		resultChan := make(chan *Result, throughput*3)
-		c, ca := context.WithDeadline(ctx, time.Now().Add(3*time.Second))
-		wg := sync.WaitGroup{}
+		stateChan := make(chan *collector.DataPoint, BRACKET_DURATION/collector.DEFAULT_RATE)
+
+		c, ca := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
 		defer ca()
 		// make the invocation
 		func() {
+			// start collecting FW state information
+			go col.Collect(c, stateChan)
+			// start simulating workload
 			for {
 				select {
 				case <-tick.C:
 				case <-c.Done():
 					return
 				}
-				wg.Add(1)
-				go func(w *sync.WaitGroup) {
-					defer w.Done()
+				go func() {
 					client := NewFWClient(t.url)
-					r, err := client.Invoke(ctx, t.wfID)
+					_, err := client.Invoke(ctx, t.wfID)
 					if err != nil {
 						logrus.Error(err)
 						return
 					}
-					resultChan <- r
-				}(&wg)
+				}()
 			}
 		}()
-		logrus.Info("Waiting For goroutines...\n")
-		wg.Wait()
-		close(resultChan)
-		logrus.Info("Done...\n")
 
 		logrus.Infof("Collecting results for %v throughput bracket...\n", throughput)
-		for r := range resultChan {
-			output = append(output, []string{strconv.FormatInt(int64(r.duration), 10), strconv.Itoa(throughput)})
+		for r := range stateChan {
+			for _, fam := range r.Data {
+				output = append(output, ThroughputResult{throughput, r.TimeStamp, fam})
+			}
 		}
-		time.Sleep(time.Second)
-
 	}
 	return output, nil
 }

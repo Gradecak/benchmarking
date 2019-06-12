@@ -87,6 +87,7 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 			// start collecting FW state information
 			go t.collector.Collect(c, stateChan)
 			// start simulating workload
+			client := NewFWClient(t.url)
 			for {
 				select {
 				case <-tick.C:
@@ -94,7 +95,6 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 					return
 				}
 				go func() {
-					client := NewFWClient(t.url)
 					_, err := client.Invoke(ctx, t.wfID)
 					if err != nil {
 						logrus.Error(err)

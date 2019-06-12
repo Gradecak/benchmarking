@@ -51,20 +51,20 @@ func (c FWClient) Invoke(ctx Context, wfID string) (*Result, error) {
 	// spec := types.NewWorkflowInvocationSpec(wfID)
 	spec.Inputs = map[string]*typedvalues.TypedValue{}
 	spec.ConsentId = "test" //RandomString(5)
-	result := &Result{}
-	start := time.Now()
+	// result := &Result{}
+	// start := time.Now()
 	// ctx := context.TODO()
-	wfi, err := c.invocation.InvokeSync(ctx, spec)
-	result.timestamp = time.Now()
+	_, err := c.invocation.InvokeSync(ctx, spec)
+	// result.timestamp = time.Now()
 	if err != nil {
 		return nil, err
 	}
-	result.duration = result.timestamp.Sub(start)
-	wiStatus := wfi.GetStatus()
-	if wiStatus.Successful() {
-		result.response = typedvalues.MustUnwrap(wiStatus.GetOutput()).(string)
-	}
-	return result, nil
+	// result.duration = result.timestamp.Sub(start)
+	// wiStatus := wfi.GetStatus()
+	// if wiStatus.Successful() {
+	// 	result.response = typedvalues.MustUnwrap(wiStatus.GetOutput()).(string)
+	// }
+	return nil, nil
 }
 
 func (c FWClient) setupWF(ctx Context, specPath string) (string, error) {

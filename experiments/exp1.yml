@@ -1,7 +1,22 @@
 url: "http://127.0.0.1:8080"
 expName: "throughput"
+expLabel: "prov-consent-throughput"
 wfSpec: "specs/1task.wf.yml"
 outputFile: "results/exp1.csv"
+# where to collect prometheus metrics from
+collector:
+  collectors:
+    - endpoint: "http://localhost:8080/metrics"
+      interest:
+        - "system_controller_exec_duration"
+        - "go_memstats_alloc_bytes"
+        - "workflows_scheduler_eval_time"
+        - "workflows_fnenv_functions_active"
+    - endpoint: "http://localhost:9090/metrics"
+      interest:
+        - "container_network_transmit_bytes_total"
+  sampling_rate: "5s"
+# experiment specific params
 expParams:
   throughput:
     - 50

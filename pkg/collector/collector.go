@@ -22,7 +22,11 @@ type Collector struct {
 type Collection struct {
 	Endpoint string
 	Interest []string
-	Output   string
+}
+
+type CollectorConfig struct {
+	Collectors   []*Collection `yaml:"collectors"`
+	SamplingRate string        `yaml:"sampling_rate"`
 }
 
 type DataPoint struct {
@@ -30,8 +34,12 @@ type DataPoint struct {
 	Data      []*prom2json.Family
 }
 
-func New(endpoints []*Collection, rate time.Duration) *Collector {
-	return &Collector{endpoints, &http.Client{}, rate}
+func New(conf *CollectorConfig) (*Collector, error) {
+	sampleRate, err := time.ParseDuration(conf.SamplingRate)
+	if err != nil {
+		return nil, err
+	}
+	return &Collector{conf.Collectors, &http.Client{}, sampleRate}, nil
 }
 
 func (c *Collector) Collect(ctx context.Context, out chan *DataPoint) error {

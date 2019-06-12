@@ -15,35 +15,20 @@ const (
 	BRACKET_DURATION = time.Minute * 1
 )
 
-var (
-	col = collector.New(
-		[]*collector.Collection{
-			&collector.Collection{
-				Endpoint: "http://localhost:8080/metrics",
-				Interest: []string{
-					"system_controller_exec_duration",
-					"go_memstats_alloc_bytes",
-					"workflows_scheduler_eval_time",
-					"workflows_fnenv_functions_active",
-				},
-				Output: "data/fw_throughput.json",
-			},
-		},
-		collector.DEFAULT_RATE,
-	)
-)
-
 type ThroughputExp struct {
 	throughputBrackets []int  // number of runs to perform per client
 	wfID               string // Id of workflow to execute
 	client             *FWClient
 	url                string
+	collector          *collector.Collector
+	expLabel           string
 }
 
 type ThroughputResult struct {
 	ThroughputBracket int
 	Timestamp         time.Time
 	State             *prom2json.Family
+	ExpLabel          string
 }
 
 func parseThroughputBrackets(brackets []interface{}) ([]int, error) {
@@ -59,7 +44,13 @@ func parseThroughputBrackets(brackets []interface{}) ([]int, error) {
 }
 
 func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
-	t := &ThroughputExp{}
+	t := &ThroughputExp{
+		expLabel:  cnf.ExpLabel,
+		collector: cnf.collector,
+		client:    NewFWClient(cnf.Url),
+		url:       cnf.Url,
+	}
+	// parse throughput brackets
 	throughputs, ok := cnf.ExpParams["throughput"]
 	if !ok {
 		return nil, errors.New("Cannot find throughput treatments in experiment config")
@@ -73,8 +64,6 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 		return nil, err
 	}
 	t.throughputBrackets = treatments
-	t.client = NewFWClient(cnf.Url)
-	t.url = cnf.Url
 	wfID, err := t.client.setupWF(Context{}, cnf.WfSpec)
 	if err != nil {
 		return nil, err
@@ -96,7 +85,7 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 		// make the invocation
 		func() {
 			// start collecting FW state information
-			go col.Collect(c, stateChan)
+			go t.collector.Collect(c, stateChan)
 			// start simulating workload
 			for {
 				select {
@@ -118,7 +107,7 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 		logrus.Infof("Collecting results for %v throughput bracket...\n", throughput)
 		for r := range stateChan {
 			for _, fam := range r.Data {
-				output = append(output, ThroughputResult{throughput, r.TimeStamp, fam})
+				output = append(output, ThroughputResult{throughput, r.TimeStamp, fam, t.expLabel})
 			}
 		}
 	}

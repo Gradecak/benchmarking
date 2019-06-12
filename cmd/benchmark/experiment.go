@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gradecak/benchmark/pkg/collector"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -18,11 +19,14 @@ type Experiment interface {
 }
 
 type ExperimentConf struct {
-	Url        string
-	ExpName    string                 `yaml:"expName"`
-	WfSpec     string                 `yaml:"wfSpec"`
-	OutputFile string                 `yaml:"outputFile"`
-	ExpParams  map[string]interface{} `yaml:"expParams"`
+	Url           string
+	ExpName       string                    `yaml:"expName"`
+	ExpLabel      string                    `yaml:"expLabel"`
+	WfSpec        string                    `yaml:"wfSpec"`
+	OutputFile    string                    `yaml:"outputFile"`
+	ExpParams     map[string]interface{}    `yaml:"expParams"`
+	CollectorConf collector.CollectorConfig `yaml:"collector"`
+	collector     *collector.Collector
 }
 
 func ConfigFromFile(filename string) (*ExperimentConf, error) {
@@ -39,9 +43,16 @@ func ConfigFromFile(filename string) (*ExperimentConf, error) {
 	return e, nil
 }
 
-func GetExperiment(expName string, c *ExperimentConf) (Experiment, error) {
-	if expConstructor, ok := exps[expName]; ok {
+func GetExperiment(c *ExperimentConf) (Experiment, error) {
+	// intialise state collector
+	collector, err := collector.New(&c.CollectorConf)
+	c.collector = collector
+	if err != nil {
+		return nil, err
+	}
+	// initialise experiment
+	if expConstructor, ok := exps[c.ExpName]; ok {
 		return expConstructor(c)
 	}
-	return nil, fmt.Errorf("Cannot find experiment %v", expName)
+	return nil, fmt.Errorf("Cannot find experiment %v", c.ExpName)
 }

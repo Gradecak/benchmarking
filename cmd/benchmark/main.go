@@ -20,20 +20,19 @@ func main() {
 	}
 	app.Action = commandContext(func(ctx Context) error {
 		logrus.Info("Parsing Experiment Config...")
-		expName := ctx.Args().Get(0)
-		conf, err := ConfigFromFile(ctx.Args().Get(1))
-		logrus.Info(conf)
+		conf, err := ConfigFromFile(ctx.Args().Get(0))
+		logrus.Infof("%+v", conf.CollectorConf)
 		if err != nil {
+			logrus.Error(err.Error())
 			return err
 		}
-		exp, err := GetExperiment(expName, conf)
+		exp, err := GetExperiment(conf)
 		if err != nil {
 			logrus.Fatal(err)
 			return err
 		}
 		logrus.Info("Setting up Experiment Config...")
 		return Run(ctx, exp, conf.OutputFile)
-		return nil
 	})
 	app.Run(os.Args)
 }

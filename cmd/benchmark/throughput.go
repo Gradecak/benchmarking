@@ -83,12 +83,13 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 		tick := time.NewTicker(time.Duration(1e9 / throughput))
 		stateChan := make(chan *collector.DataPoint, BRACKET_DURATION/collector.DEFAULT_RATE)
 		c, ca := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
+		collectorContext, ccCancel := context.WithCancel(ctx)
 		defer ca()
 		// make the invocation
 		wg := sync.WaitGroup{}
 		func() {
 			// start collecting FW state information
-			go t.collector.Collect(c, stateChan)
+			go t.collector.Collect(collectorContext, stateChan)
 			// start simulating workload
 			client, err := NewFWClient(t.url)
 			if err != nil {
@@ -114,6 +115,8 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 		}()
 		logrus.Info("Waiting for Lads to finish")
 		wg.Wait()
+		// stop the collector and process the results
+		ccCancel()
 		logrus.Infof("Collecting results for %v throughput bracket...\n", throughput)
 		for r := range stateChan {
 			for _, fam := range r.Data {

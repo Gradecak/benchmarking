@@ -1,13 +1,12 @@
 package main
 
 import (
-	"github.com/gradecak/fission-workflows/pkg/apiserver/httpclient"
+	"github.com/gradecak/fission-workflows/pkg/apiserver"
 	"github.com/gradecak/fission-workflows/pkg/parse"
 	"github.com/gradecak/fission-workflows/pkg/types"
 	"github.com/gradecak/fission-workflows/pkg/types/typedvalues"
 	"github.com/sirupsen/logrus"
 	"math/rand"
-	"net/http"
 	"os"
 	"time"
 )
@@ -34,36 +33,25 @@ func RandomString(n int) string {
 }
 
 type FWClient struct {
-	invocation *httpclient.InvocationAPI
-	workflow   *httpclient.WorkflowAPI
+	*apiserver.Client
 }
 
-func NewFWClient(url string) *FWClient {
-	httpClient := http.Client{}
-	return &FWClient{
-		httpclient.NewInvocationAPI(url, httpClient),
-		httpclient.NewWorkflowAPI(url, httpClient),
+func NewFWClient(url string) (*FWClient, error) {
+	client, err := apiserver.Connect(url)
+	if err != nil {
+		return nil, err
 	}
+	return &FWClient{client}, nil
 }
 
 func (c FWClient) Invoke(ctx Context, wfID string) (*Result, error) {
 	spec := types.NewWorkflowInvocationSpec(wfID, time.Now().Add(defaultTimeout))
-	// spec := types.NewWorkflowInvocationSpec(wfID)
 	spec.Inputs = map[string]*typedvalues.TypedValue{}
 	spec.ConsentId = "test" //RandomString(5)
-	// result := &Result{}
-	// start := time.Now()
-	// ctx := context.TODO()
-	_, err := c.invocation.InvokeSync(ctx, spec)
-	// result.timestamp = time.Now()
+	_, err := c.Invocation.InvokeSync(ctx, spec)
 	if err != nil {
 		return nil, err
 	}
-	// result.duration = result.timestamp.Sub(start)
-	// wiStatus := wfi.GetStatus()
-	// if wiStatus.Successful() {
-	// 	result.response = typedvalues.MustUnwrap(wiStatus.GetOutput()).(string)
-	// }
 	return nil, nil
 }
 
@@ -76,7 +64,7 @@ func (c FWClient) setupWF(ctx Context, specPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	md, err := c.workflow.CreateSync(ctx, spec)
+	md, err := c.Workflow.CreateSync(ctx, spec)
 	if err != nil {
 		return "", err
 	}

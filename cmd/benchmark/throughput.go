@@ -18,7 +18,6 @@ const (
 type ThroughputExp struct {
 	throughputBrackets []int  // number of runs to perform per client
 	wfID               string // Id of workflow to execute
-	client             *FWClient
 	url                string
 	collector          *collector.Collector
 	expLabel           string
@@ -47,7 +46,6 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 	t := &ThroughputExp{
 		expLabel:  cnf.ExpLabel,
 		collector: cnf.collector,
-		client:    NewFWClient(cnf.Url),
 		url:       cnf.Url,
 	}
 	// parse throughput brackets
@@ -64,7 +62,12 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 		return nil, err
 	}
 	t.throughputBrackets = treatments
-	wfID, err := t.client.setupWF(Context{}, cnf.WfSpec)
+
+	client, err := NewFWClient(cnf.Url)
+	if err != nil {
+		return nil, err
+	}
+	wfID, err := client.setupWF(Context{}, cnf.WfSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +89,11 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 			// start collecting FW state information
 			go t.collector.Collect(c, stateChan)
 			// start simulating workload
-			client := NewFWClient(t.url)
+			client, err := NewFWClient(t.url)
+			if err != nil {
+				logrus.Fatal(err.Error())
+				return
+			}
 			for {
 				select {
 				case <-tick.C:

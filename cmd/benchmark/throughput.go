@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
 	// "strconv"
-	// "sync"
+	"sync"
 	"time"
 )
 
@@ -85,6 +85,7 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 		c, ca := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
 		defer ca()
 		// make the invocation
+		wg := sync.WaitGroup{}
 		func() {
 			// start collecting FW state information
 			go t.collector.Collect(c, stateChan)
@@ -100,16 +101,19 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 				case <-c.Done():
 					return
 				}
-				go func() {
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					defer wg.Done()
 					_, err := client.Invoke(ctx, t.wfID)
 					if err != nil {
 						logrus.Error(err)
 						return
 					}
-				}()
+				}(&wg)
 			}
 		}()
-
+		logrus.Info("Waiting for Lads to finish")
+		wg.Wait()
 		logrus.Infof("Collecting results for %v throughput bracket...\n", throughput)
 		for r := range stateChan {
 			for _, fam := range r.Data {

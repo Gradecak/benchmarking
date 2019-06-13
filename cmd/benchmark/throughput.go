@@ -79,7 +79,6 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 		logrus.Infof("Starting invocations for %v for throughput bracket\n", throughput)
 		tick := time.NewTicker(time.Duration(1e9 / throughput))
 		stateChan := make(chan *collector.DataPoint, BRACKET_DURATION/collector.DEFAULT_RATE)
-
 		c, ca := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
 		defer ca()
 		// make the invocation

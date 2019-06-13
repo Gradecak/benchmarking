@@ -61,9 +61,9 @@ func (c *Collector) Collect(ctx context.Context, out chan *DataPoint) error {
 			if err != nil {
 				logrus.Warn(err.Error())
 			}
-
 			parser := &expfmt.TextParser{}
 			mfs, err := parser.TextToMetricFamilies(resp.Body)
+			resp.Body.Close()
 			if err != nil {
 				logrus.Warn(err.Error())
 				// return err

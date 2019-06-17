@@ -42,6 +42,10 @@ func New(conf *CollectorConfig) (*Collector, error) {
 	return &Collector{conf.Collectors, &http.Client{}, sampleRate}, nil
 }
 
+func (c *Collector) GetRate() time.Duration {
+	return c.rate
+}
+
 func (c *Collector) Collect(ctx context.Context, out chan *DataPoint) error {
 	tick := time.NewTicker(c.rate)
 	for {

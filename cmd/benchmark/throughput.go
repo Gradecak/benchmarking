@@ -13,6 +13,7 @@ import (
 
 const (
 	BRACKET_DURATION = time.Minute * 1
+	WARMUP_DURATION  = time.Second * 20
 )
 
 type ThroughputExp struct {
@@ -75,16 +76,43 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 	return t, nil
 }
 
+func (t ThroughputExp) warmup(throughput int) error {
+	client, err := NewFWClient(t.url)
+	if err != nil {
+		return err
+	}
+	ctx, ca := context.WithDeadline(context.TODO(), time.Now().Add(WARMUP_DURATION))
+	defer ca()
+	tick := time.NewTicker(time.Duration(1e9 / throughput))
+	for {
+		select {
+		case <-tick.C:
+		case <-ctx.Done():
+			return nil
+		}
+		go func() {
+			_, err := client.Invoke(Context{}, t.wfID)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
+		}()
+	}
+}
+
 func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
-	// output := make([]ThroughputResult, len(t.throughputBrackets))
 	output := []ThroughputResult{}
+
 	for _, throughput := range t.throughputBrackets {
+		t.warmup(throughput)
 		logrus.Infof("Starting invocations for %v for throughput bracket\n", throughput)
+
 		tick := time.NewTicker(time.Duration(1e9 / throughput))
-		stateChan := make(chan *collector.DataPoint, BRACKET_DURATION/collector.DEFAULT_RATE)
-		c, ca := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
+		stateChan := make(chan *collector.DataPoint,
+			(BRACKET_DURATION/time.Second)/t.collector.GetRate()+1000)
+
+		c, _ := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
 		collectorContext, ccCancel := context.WithCancel(ctx)
-		defer ca()
 		// make the invocation
 		wg := sync.WaitGroup{}
 		func() {
@@ -96,21 +124,25 @@ func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 				logrus.Fatal(err.Error())
 				return
 			}
-			for {
-				select {
-				case <-tick.C:
-				case <-c.Done():
-					return
-				}
-				wg.Add(1)
-				go func(wg *sync.WaitGroup) {
-					defer wg.Done()
-					_, err := client.Invoke(ctx, t.wfID)
-					if err != nil {
-						logrus.Error(err)
+			if throughput != 1 {
+				for {
+					select {
+					case <-tick.C:
+					case <-c.Done():
 						return
 					}
-				}(&wg)
+					wg.Add(1)
+					go func(wg *sync.WaitGroup) {
+						defer wg.Done()
+						_, err := client.Invoke(ctx, t.wfID)
+						if err != nil {
+							logrus.Error(err)
+							return
+						}
+					}(&wg)
+				}
+			} else {
+				time.Sleep(time.Minute)
 			}
 		}()
 		logrus.Info("Waiting for Lads to finish")

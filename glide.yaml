@@ -11,3 +11,5 @@ import:
   - expfmt
 - package: github.com/prometheus/prom2json
   version: ^1.2.1
+- package: google.golang.org/grpc
+  version: ^1.21.1

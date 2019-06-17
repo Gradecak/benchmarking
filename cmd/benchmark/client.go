@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/gradecak/fission-workflows/pkg/apiserver"
 	"github.com/gradecak/fission-workflows/pkg/parse"
 	"github.com/gradecak/fission-workflows/pkg/types"
@@ -12,7 +13,7 @@ import (
 )
 
 const (
-	defaultTimeout = 2 * time.Minute
+	defaultTimeout = 3 * time.Minute
 )
 
 type Result struct {
@@ -50,6 +51,7 @@ func (c FWClient) Invoke(ctx Context, wfID string) (*Result, error) {
 	spec.ConsentId = "test" //RandomString(5)
 	_, err := c.Invocation.InvokeSync(ctx, spec)
 	if err != nil {
+		logrus.Errorf("Invocation Error %v", err)
 		return nil, err
 	}
 	return nil, nil
@@ -64,7 +66,7 @@ func (c FWClient) setupWF(ctx Context, specPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	md, err := c.Workflow.CreateSync(ctx, spec)
+	md, err := c.Workflow.CreateSync(context.TODO(), spec)
 	if err != nil {
 		return "", err
 	}

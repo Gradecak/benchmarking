@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/gradecak/benchmark/pkg/collector"
+	"github.com/gradecak/benchmark/pkg/ticker"
 	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
 	// "strconv"
@@ -83,72 +84,71 @@ func (t ThroughputExp) warmup(throughput int) error {
 	}
 	ctx, ca := context.WithDeadline(context.TODO(), time.Now().Add(WARMUP_DURATION))
 	defer ca()
-	tick := time.NewTicker(time.Duration(1e9 / throughput))
-	for {
-		select {
-		case <-tick.C:
-		case <-ctx.Done():
-			return nil
+	tick := ticker.NewTicker(time.Duration(1e9 / throughput))
+	tick.Tick(ctx, func() {
+		_, err := client.Invoke(Context{}, t.wfID)
+		if err != nil {
+			logrus.Error(err)
+			return
 		}
-		go func() {
-			_, err := client.Invoke(Context{}, t.wfID)
-			if err != nil {
-				logrus.Error(err)
-				return
-			}
-		}()
-	}
+	})
+	return nil
 }
 
 func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 	output := []ThroughputResult{}
 
 	for _, throughput := range t.throughputBrackets {
+		logrus.Infof("Warming up for throughput bracket (%v)\n", throughput)
 		t.warmup(throughput)
-		logrus.Infof("Starting invocations for %v for throughput bracket\n", throughput)
-
-		tick := time.NewTicker(time.Duration(1e9 / throughput))
+		logrus.Infof("Starting experiment (%v)\n", throughput)
+		// setup collector buffer
 		stateChan := make(chan *collector.DataPoint,
 			(BRACKET_DURATION/time.Second)/t.collector.GetRate()+1000)
-
-		c, _ := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
 		collectorContext, ccCancel := context.WithCancel(ctx)
-		// make the invocation
+		// start collecting FW state information
+		go t.collector.Collect(collectorContext, stateChan)
+		// get FW client
+		client, err := NewFWClient(t.url)
+		if err != nil {
+			logrus.Fatal(err.Error())
+			return nil, err
+		}
+
+		c, b := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
+		ticker := time.NewTicker(time.Duration(1e9 / throughput))
 		wg := sync.WaitGroup{}
 		func() {
-			// start collecting FW state information
-			go t.collector.Collect(collectorContext, stateChan)
-			// start simulating workload
-			client, err := NewFWClient(t.url)
-			if err != nil {
-				logrus.Fatal(err.Error())
-				return
-			}
-			if throughput != 1 {
-				for {
-					select {
-					case <-tick.C:
-					case <-c.Done():
-						return
-					}
+			for {
+				select {
+				case <-ticker.C:
 					wg.Add(1)
 					go func(wg *sync.WaitGroup) {
 						defer wg.Done()
-						_, err := client.Invoke(ctx, t.wfID)
+						_, err := client.Invoke(Context{}, t.wfID)
 						if err != nil {
 							logrus.Error(err)
 							return
 						}
+
 					}(&wg)
+				case <-c.Done():
+					return
 				}
-			} else {
-				time.Sleep(time.Minute)
 			}
+
 		}()
-		logrus.Info("Waiting for Lads to finish")
+
+		//get the FW client
+
+		// } else { // dont do anything just collect state
+		//	time.Sleep(time.Minute)
+		// }
+		logrus.Info("Waiting for Lads to finish...")
 		wg.Wait()
 		// stop the collector and process the results
 		ccCancel()
+		b()
 		logrus.Infof("Collecting results for %v throughput bracket...\n", throughput)
 		for r := range stateChan {
 			for _, fam := range r.Data {

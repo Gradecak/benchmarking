@@ -45,16 +45,20 @@ func NewFWClient(url string) (*FWClient, error) {
 	return &FWClient{client}, nil
 }
 
-func (c FWClient) Invoke(ctx Context, wfID string) (*Result, error) {
+func (c FWClient) InvokeWithConsentID(ctx Context, wfID string, cId string) (*Result, error) {
 	spec := types.NewWorkflowInvocationSpec(wfID, time.Now().Add(defaultTimeout))
 	spec.Inputs = map[string]*typedvalues.TypedValue{}
-	spec.ConsentId = "test" //RandomString(5)
+	spec.ConsentId = cId
 	_, err := c.Invocation.InvokeSync(ctx, spec)
 	if err != nil {
 		logrus.Errorf("Invocation Error %v", err)
 		return nil, err
 	}
 	return nil, nil
+}
+
+func (c FWClient) Invoke(ctx Context, wfID string) (*Result, error) {
+	return c.InvokeWithConsentID(ctx, wfID, RandomString(6))
 }
 
 func (c FWClient) setupWF(ctx Context, specPath string) (string, error) {

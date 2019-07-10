@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/gradecak/benchmark/pkg/collector"
-	"github.com/gradecak/benchmark/pkg/ticker"
 	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
 	// "strconv"
@@ -82,16 +81,25 @@ func (t ThroughputExp) warmup(throughput int) error {
 	if err != nil {
 		return err
 	}
+	ticker := time.NewTicker(time.Duration(1e9 / throughput))
 	ctx, ca := context.WithDeadline(context.TODO(), time.Now().Add(WARMUP_DURATION))
 	defer ca()
-	tick := ticker.NewTicker(time.Duration(1e9 / throughput))
-	tick.Tick(ctx, func() {
-		_, err := client.Invoke(Context{}, t.wfID)
-		if err != nil {
-			logrus.Error(err)
-			return
+	for {
+		select {
+		case <-ticker.C:
+			go func() {
+				_, err := client.Invoke(Context{}, t.wfID)
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
+
+			}()
+		case <-ctx.Done():
+			return nil
 		}
-	})
+	}
+
 	return nil
 }
 

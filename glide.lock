@@ -1,5 +1,5 @@
-hash: da35d56cee8873d0b10c56c638ee11d4ce7acfa86ba4d03d6bfbf9b4d1c4c940
-updated: 2019-06-13T12:36:35.81301434+02:00
+hash: a2949073787a3f50473c6f1af372571c99a9a9e2f12a9fe08d54a55397ad5249
+updated: 2019-07-09T15:18:11.661411904+02:00
 imports:
 - name: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
@@ -22,6 +22,8 @@ imports:
   - ptypes/struct
   - ptypes/timestamp
   - ptypes/wrappers
+- name: github.com/gorilla/mux
+  version: 00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15
 - name: github.com/gradecak/fission-workflows
   version: d4b0c1a3ef43f8c152ed9ff1435c10ab3f43fdf4
   subpackages:
@@ -30,7 +32,6 @@ imports:
   - pkg/api/projectors
   - pkg/api/store
   - pkg/apiserver
-  - pkg/apiserver/httpclient
   - pkg/consent
   - pkg/fes
   - pkg/fnenv
@@ -78,7 +79,7 @@ imports:
   subpackages:
   - difflib
 - name: github.com/prometheus/client_golang
-  version: c5b7fccd204277076155f10851dad72b76a49317
+  version: ""
   subpackages:
   - prometheus
 - name: github.com/prometheus/client_model
@@ -86,7 +87,7 @@ imports:
   subpackages:
   - go
 - name: github.com/prometheus/common
-  version: 17f5ca1748182ddf24fc33a5a7caaaf790a52fcc
+  version: 31bed53e4047fd6c510e43a941f90cb31be0972a
   subpackages:
   - expfmt
   - internal/bitbucket.org/ww/goautoneg

@@ -10,6 +10,7 @@ import (
 
 var exps = map[string]ExperimentConstructor{
 	"throughput": setupThroughput,
+	"ttr":        setupTTRExp,
 }
 
 type ExperimentConstructor = func(*ExperimentConf) (Experiment, error)

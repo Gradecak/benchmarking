@@ -3,6 +3,7 @@ import json
 from pandas.io.json import json_normalize
 import sys
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 
 quantile_range = [
     # "quantiles.0",
@@ -29,11 +30,19 @@ def plot_throughput(df):
     # qr = quantile_range + ["ThroughputBracket"]
     # _, ax = plt.subplots()
 
-    ax = throughput_df.pivot_table(index="ThroughputBracket", values=quantile_range).plot(kind='line')
+    ax = throughput_df.pivot_table(index="Timestamp", columns="labels.type", values='quantiles.0.9')["running"].plot(kind='line')
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M:%S'))
+    k_df = df.loc[(df['name'] == "fes_cache_current_cache_counts") &
+                  (df['labels.name'] == "invocation")].copy()
+    k_df.groupby('Timestamp')['value'].mean().plot(kind='line', ax=ax)
+    periods = throughput_df[throughput_df.ThroughputBracket.diff()!=0].Timestamp.values
+    # Plot the red vertical lines
+    for item in periods[1::]:
+        plt.axvline(item, ymin=0, ymax=1,color='red', linestyle='-.')
     # ax2 = ax.twinx()
-    p = throughput_df.pivot_table(index="ThroughputBracket", columns="labels.type", values="quantiles.0.5")
-    p['running'] = p['running'].sub(p['queued'])
-    p.plot(kind='bar', stacked=True)
+    # p = throughput_df.pivot_table(index="ThroughputBracket", columns="labels.type", values="quantiles.0.5")
+    # p['running'] = p['running'].sub(p['queued'])
+    # p.plot(kind='bar', stacked=True)
 
     # ax.set(xlabel="QPS", ylabel="Latency (ms)")
     # ax.legend([x[10:] for x in quantile_range])
@@ -88,7 +97,7 @@ def main():
     # plot_mem(df)
     plot_throughput(df)
     # plot_scheduler_eval(df)
-    plot_active_controllers(df)
+    # plot_active_controllers(df)
     # plot_network_usage(df)
 
     plt.show()

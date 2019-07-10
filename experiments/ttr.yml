@@ -1,9 +1,8 @@
 url: "127.0.0.1:5555"
-expName: "throughput"
+expName: "ttr"
 expLabel: "base-throughput"
 wfSpec: "specs/1task.wf.yml"
 outputFile: "results/exp6.csv"
-# where to collect prometheus metrics from
 collector:
   collectors:
     - endpoint: "http://localhost:8080/metrics"
@@ -19,22 +18,3 @@ collector:
     #   interest:
     #     - "container_network_transmit_bytes_total"
   sampling_rate: "3s"
-# experiment specific params
-expParams:
-  throughput:
-    - 20
-    - 30
-    - 40
-    - 50
-    - 60
-    - 70
-    - 80
-    - 90
-    - 100
-    - 110
-    - 120
-    - 130
-    - 140
-    - 150
-    - 160
-    - 170

@@ -17,11 +17,12 @@ const (
 )
 
 type ThroughputExp struct {
-	throughputBrackets []int  // number of runs to perform per client
-	wfID               string // Id of workflow to execute
-	url                string
-	collector          *collector.Collector
-	expLabel           string
+	maxThroughput       int
+	throughputIntervals int
+	wfID                string // Id of workflow to execute
+	url                 string
+	collector           *collector.Collector
+	expLabel            string
 }
 
 type ThroughputResult struct {
@@ -31,38 +32,29 @@ type ThroughputResult struct {
 	ExpLabel          string
 }
 
-func parseThroughputBrackets(brackets []interface{}) ([]int, error) {
-	ret := []int{}
-	for _, bracket := range brackets {
-		intB, ok := bracket.(int)
-		if !ok {
-			return nil, errors.New("Cannot convert throughput bracket to integer")
-		}
-		ret = append(ret, intB)
-	}
-	return ret, nil
-}
-
 func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 	t := &ThroughputExp{
-		expLabel:  cnf.ExpLabel,
-		collector: cnf.collector,
-		url:       cnf.Url,
+		expLabel:            cnf.ExpLabel,
+		collector:           cnf.collector,
+		url:                 cnf.Url,
+		maxThroughput:       0,
+		throughputIntervals: 0,
 	}
 	// parse throughput brackets
-	throughputs, ok := cnf.ExpParams["throughput"]
+	maxThroughput, ok := cnf.ExpParams["maxThroughput"]
 	if !ok {
 		return nil, errors.New("Cannot find throughput treatments in experiment config")
 	}
-	tb, ok := throughputs.([]interface{})
+	if maxThroughput, ok := maxThroughput.(int); ok {
+		t.maxThroughput = maxThroughput
+	}
+	throughputIntervals, ok := cnf.ExpParams["throughputIntervals"]
 	if !ok {
-		return nil, errors.New("Throughputs must be list of integers")
+		return nil, errors.New("Cannot find throughput treatments in experiment config")
 	}
-	treatments, err := parseThroughputBrackets(tb)
-	if err != nil {
-		return nil, err
+	if throughputIntervals, ok := throughputIntervals.(int); ok {
+		t.throughputIntervals = throughputIntervals
 	}
-	t.throughputBrackets = treatments
 
 	client, err := NewFWClient(cnf.Url)
 	if err != nil {
@@ -106,7 +98,7 @@ func (t ThroughputExp) warmup(throughput int) error {
 func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 	output := []ThroughputResult{}
 
-	for _, throughput := range t.throughputBrackets {
+	for throughput := t.throughputIntervals; throughput < t.maxThroughput; throughput += t.throughputIntervals {
 		logrus.Infof("Warming up for throughput bracket (%v)\n", throughput)
 		t.warmup(throughput)
 		logrus.Infof("Starting experiment (%v)\n", throughput)

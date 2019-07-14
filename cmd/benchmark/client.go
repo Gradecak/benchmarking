@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"github.com/gradecak/fission-workflows/pkg/apiserver"
-	"github.com/gradecak/fission-workflows/pkg/parse"
+	"github.com/gradecak/fission-workflows/pkg/parse/yaml"
 	"github.com/gradecak/fission-workflows/pkg/types"
 	"github.com/gradecak/fission-workflows/pkg/types/typedvalues"
 	"github.com/sirupsen/logrus"
@@ -66,7 +66,7 @@ func (c FWClient) setupWF(ctx Context, specPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	spec, err := parse.Parse(fd)
+	spec, err := yaml.Parse(fd)
 	if err != nil {
 		return "", err
 	}

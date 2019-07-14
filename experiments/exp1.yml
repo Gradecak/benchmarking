@@ -21,20 +21,5 @@ collector:
   sampling_rate: "3s"
 # experiment specific params
 expParams:
-  throughput:
-    - 20
-    - 30
-    - 40
-    - 50
-    - 60
-    - 70
-    - 80
-    - 90
-    - 100
-    - 110
-    - 120
-    - 130
-    - 140
-    - 150
-    - 160
-    - 170
+  maxThroughput: 100
+  intervals: 10

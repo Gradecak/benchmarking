@@ -1,8 +1,8 @@
 url: "127.0.0.1:5555"
 expName: "ttr"
 expLabel: "base-throughput"
-wfSpec: "specs/1task.wf.yml"
-outputFile: "results/exp6.csv"
+wfSpec: "./specs/1task.wf.yml"
+outputFile: "results/exp7.csv"
 collector:
   collectors:
     - endpoint: "http://localhost:8080/metrics"

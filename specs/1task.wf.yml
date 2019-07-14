@@ -1,13 +1,21 @@
+# Fortunewhale shows of a basic workflow that combines both
+# Fission Functions (fortune, whalesay) and Internalfunctions (noop)
+#
+# Usage example: fission fn test --name fortunewhale
 apiVersion: 1
 output: Privacy
 tasks:
   Privacy:
     run: hello
-    inputs:
-      headers:
-        X-CustomFn: "tr"
-    execOpts:
-      multizone: true
+    # execOpts:
+    #   multizone: true
+    provenanceMeta:
+      opType: "write"
+      meta:
+        revoke:
+          url: "http://localhost:9999/done"
 
 dataflow:
   consentCheck: true
+  provenance: true
+  predecessor: "test"

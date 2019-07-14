@@ -40,12 +40,16 @@ def plot_throughput(df):
     for item in periods[1::]:
         plt.axvline(item, ymin=0, ymax=1,color='red', linestyle='-.')
     # ax2 = ax.twinx()
-    # p = throughput_df.pivot_table(index="ThroughputBracket", columns="labels.type", values="quantiles.0.5")
-    # p['running'] = p['running'].sub(p['queued'])
-    # p.plot(kind='bar', stacked=True)
+    p = throughput_df.pivot_table(index="ThroughputBracket", columns="labels.type", values="quantiles.0.5")
+    p['running'] = p['running'].sub(p['queued'])
+    p.plot(kind='bar', stacked=True)
 
+
+    throughput_df.pivot_table(index="ThroughputBracket", values=quantile_range).plot(kind='line')
     # ax.set(xlabel="QPS", ylabel="Latency (ms)")
     # ax.legend([x[10:] for x in quantile_range])
+
+
 
 def plot_mem(df):
     mem_df = df.loc[(df['name'] == "go_memstats_alloc_bytes")].copy()

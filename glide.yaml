@@ -4,7 +4,7 @@ import:
 - package: github.com/urfave/cli
   version: ~1.20.0
 - package: github.com/gradecak/fission-workflows
-  version: ^0.6.1
+  version: ^0.6.3
 - package: github.com/prometheus/common
   version: ^0.4.1
   subpackages:
@@ -12,10 +12,16 @@ import:
 - package: github.com/prometheus/prom2json
   version: ^1.2.1
 - package: google.golang.org/grpc
-  version: ^1.21.1
+  version: ~1.10.0
 - package: github.com/gorilla/mux
   version: ^1.7.3
 - package: github.com/prometheus/client_golang
-  version: ~1.0.0
+  version: ~0.8.0
   subpackages:
   - prometheus
+- package: github.com/golang/protobuf
+  subpackages:
+  - proto
+- package: github.com/nats-io/stan.go
+ignore:
+  - crypto/ed25519

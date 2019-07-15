@@ -6,7 +6,6 @@ import (
 	"github.com/gradecak/benchmark/pkg/collector"
 	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
-	// "strconv"
 	"sync"
 	"time"
 )
@@ -48,7 +47,7 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 	if maxThroughput, ok := maxThroughput.(int); ok {
 		t.maxThroughput = maxThroughput
 	}
-	throughputIntervals, ok := cnf.ExpParams["throughputIntervals"]
+	throughputIntervals, ok := cnf.ExpParams["intervals"]
 	if !ok {
 		return nil, errors.New("Cannot find throughput treatments in experiment config")
 	}

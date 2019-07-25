@@ -7,7 +7,6 @@ import (
 	"github.com/gradecak/benchmark/pkg/workflows"
 	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
-	"sync"
 	"time"
 )
 
@@ -70,23 +69,20 @@ func (exp SerialExp) warmup(wfId string) error {
 	if err != nil {
 		return err
 	}
-	ticker := time.NewTicker(time.Duration(1e9 / exp.qps))
 	ctx, ca := context.WithDeadline(context.TODO(), time.Now().Add(WARMUP_DURATION))
 	defer ca()
 	for {
 		select {
-		case <-ticker.C:
-			go func() {
-				_, err := client.Invoke(Context{}, wfId)
-				if err != nil {
-					logrus.Error(err)
-					return
-				}
-
-			}()
 		case <-ctx.Done():
 			return nil
+		default:
+			_, err := client.Invoke(Context{}, wfId)
+			if err != nil {
+				logrus.Error(err)
+				return err
+			}
 		}
+
 	}
 	return nil
 }
@@ -114,34 +110,34 @@ func (exp SerialExp) Run(ctx Context) (interface{}, error) {
 		colCtx, cancel := context.WithCancel(ctx)
 
 		//warmup for given workflow size
-		exp.warmup(wfId)
+		logrus.Info("Warming up treatment")
+		if err := exp.warmup(wfId); err != nil {
+			logrus.Error(err)
+			return nil, err
+		}
 
 		// start experiment and collector
-		ticker := time.NewTicker(time.Duration(1e9 / exp.qps))
 		c, _ := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
 		go exp.collector.Collect(colCtx, collectorChan)
-		wg := sync.WaitGroup{}
 		func() {
 			for {
 				select {
-				case <-ticker.C:
-					wg.Add(1)
-					go func(wg *sync.WaitGroup) {
-						defer wg.Done()
-						_, err := client.Invoke(Context{}, wfId)
-						if err != nil {
-							logrus.Error(err)
-							return
-						}
-					}(&wg)
 				case <-c.Done():
 					return
+				default:
+					_, err := client.Invoke(Context{}, wfId)
+					if err != nil {
+						logrus.Error(err)
+						return
+					}
+
 				}
+
 			}
+
 		}()
 
 		logrus.Info("Waiting for the Boysh to finish...")
-		wg.Wait()
 		cancel()
 
 		logrus.Infof("Collecting results for %s wf length...\n", wfLength)
@@ -151,8 +147,6 @@ func (exp SerialExp) Run(ctx Context) (interface{}, error) {
 					SerialResult{wfLength, r.TimeStamp, fam, exp.expLabel})
 			}
 		}
-
 	}
-
 	return output, nil
 }

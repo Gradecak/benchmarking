@@ -78,7 +78,7 @@ func (exp TTRExperiment) Run(c Context) (interface{}, error) {
 			return nil, err
 		}
 		for j := 0; j < i; j++ {
-			wfID, err := client.setupWF(c, exp.wfSpecPath)
+			wfID, err := client.SetupWfFromFile(c, exp.wfSpecPath)
 			if err != nil {
 				return nil, err
 			}

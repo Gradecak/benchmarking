@@ -10,6 +10,7 @@ import (
 
 var exps = map[string]ExperimentConstructor{
 	"throughput": setupThroughput,
+	"wfSerial":   setupSerialExp,
 	"ttr":        setupTTRExp,
 }
 

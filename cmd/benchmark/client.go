@@ -61,7 +61,7 @@ func (c FWClient) Invoke(ctx Context, wfID string) (*Result, error) {
 	return c.InvokeWithConsentID(ctx, wfID, RandomString(6))
 }
 
-func (c FWClient) setupWF(ctx Context, specPath string) (string, error) {
+func (c FWClient) SetupWfFromFile(ctx Context, specPath string) (string, error) {
 	fd, err := os.Open(specPath)
 	if err != nil {
 		return "", err
@@ -75,5 +75,14 @@ func (c FWClient) setupWF(ctx Context, specPath string) (string, error) {
 		return "", err
 	}
 	logrus.Info(md.ID())
+	return md.ID(), nil
+}
+
+func (c FWClient) SetupWfFromSpec(ctx Context, spec *types.WorkflowSpec) (string, error) {
+	md, err := c.Workflow.CreateSync(context.TODO(), spec)
+	if err != nil {
+		return "", err
+	}
+	logrus.Infof("Created Workflow (%s)", md.ID())
 	return md.ID(), nil
 }

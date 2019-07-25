@@ -18,6 +18,7 @@ const (
 type ThroughputExp struct {
 	maxThroughput       int
 	throughputIntervals int
+	startInterval       int
 	wfID                string // Id of workflow to execute
 	url                 string
 	collector           *collector.Collector
@@ -54,12 +55,19 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 	if throughputIntervals, ok := throughputIntervals.(int); ok {
 		t.throughputIntervals = throughputIntervals
 	}
+	startInterval, ok := cnf.ExpParams["startInterval"]
+	if !ok {
+		return nil, errors.New("Cannot find throughput treatments in experiment config")
+	}
+	if startInterval, ok := startInterval.(int); ok {
+		t.startInterval = startInterval
+	}
 
 	client, err := NewFWClient(cnf.Url)
 	if err != nil {
 		return nil, err
 	}
-	wfID, err := client.setupWF(Context{}, cnf.WfSpec)
+	wfID, err := client.SetupWfFromFile(Context{}, cnf.WfSpec)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +105,7 @@ func (t ThroughputExp) warmup(throughput int) error {
 func (t ThroughputExp) Run(ctx Context) (interface{}, error) {
 	output := []ThroughputResult{}
 
-	for throughput := t.throughputIntervals; throughput < t.maxThroughput; throughput += t.throughputIntervals {
+	for throughput := t.startInterval; throughput < t.maxThroughput; throughput += t.throughputIntervals {
 		logrus.Infof("Warming up for throughput bracket (%v)\n", throughput)
 		t.warmup(throughput)
 		logrus.Infof("Starting experiment (%v)\n", throughput)

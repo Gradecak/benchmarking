@@ -18,7 +18,8 @@ type SerialExp struct {
 	expLabel          string
 	qps               int
 	//
-	url string
+	url    string
+	wfConf *workflows.WorkflowConfig
 }
 
 type SerialResult struct {
@@ -33,6 +34,10 @@ func setupSerialExp(cnf *ExperimentConf) (Experiment, error) {
 		expLabel:  cnf.ExpLabel,
 		collector: cnf.collector,
 		url:       cnf.Url,
+		wfConf: &workflows.WorkflowConfig{
+			Consent:    true,
+			Provenance: true,
+		},
 	}
 	// parse length
 	maxLen, ok := cnf.ExpParams["maxLen"]
@@ -98,7 +103,7 @@ func (exp SerialExp) Run(ctx Context) (interface{}, error) {
 			logrus.Fatal(err.Error())
 			return nil, err
 		}
-		spec := workflows.NewWorkflow(1, wfLength)
+		spec := workflows.NewWorkflow(1, wfLength, exp.wfConf)
 		wfId, err := client.SetupWfFromSpec(ctx, spec)
 		if err != nil {
 			logrus.Fatal("Cannot setup workflow length (%d)", wfLength)

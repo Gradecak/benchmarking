@@ -9,7 +9,18 @@ const (
 	TASK_NAME = "T%d"
 )
 
-func NewWorkflow(parallel, serial int) *types.WorkflowSpec {
+type WorkflowConfig struct {
+	//WF Specific Config
+	Consent    bool
+	Provenance bool
+
+	//Task Specific
+	ProvMeta      map[string]interface{}
+	MultienvTasks bool
+	//TODO task zone locking/hinting
+}
+
+func NewWorkflow(parallel, serial int, wfConf *WorkflowConfig) *types.WorkflowSpec {
 	tasks := []map[string]*types.TaskSpec{}
 	outputTask := fmt.Sprintf(TASK_NAME, parallel*serial)
 
@@ -18,9 +29,9 @@ func NewWorkflow(parallel, serial int) *types.WorkflowSpec {
 		for j := 0; j < parallel; j++ {
 			taskName := fmt.Sprintf(TASK_NAME, (i*parallel + (j + 1)))
 			if i > 0 {
-				tasks[i][taskName] = newTask(tasks[i-1])
+				tasks[i][taskName] = newTask(tasks[i-1], wfConf)
 			} else {
-				tasks[i][taskName] = newTask(map[string]*types.TaskSpec{})
+				tasks[i][taskName] = newTask(map[string]*types.TaskSpec{}, wfConf)
 			}
 		}
 	}
@@ -33,14 +44,23 @@ func NewWorkflow(parallel, serial int) *types.WorkflowSpec {
 		}
 	}
 
-	return &types.WorkflowSpec{
-		// ApiVersion: "",
+	spec := &types.WorkflowSpec{
 		OutputTask: outputTask,
 		Tasks:      taskSpecs,
 	}
+
+	if wfConf != nil {
+		dfSpec := &types.DataFlowSpec{
+			ConsentCheck: wfConf.Consent,
+			Provenance:   wfConf.Provenance,
+		}
+		spec.Dataflow = dfSpec
+	}
+
+	return spec
 }
 
-func newTask(deps map[string]*types.TaskSpec) *types.TaskSpec {
+func newTask(deps map[string]*types.TaskSpec, wfConf *WorkflowConfig) *types.TaskSpec {
 
 	d := map[string]*types.TaskDependencyParameters{}
 	for dep, _ := range deps {

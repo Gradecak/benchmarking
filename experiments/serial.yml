@@ -23,7 +23,7 @@ collector:
   sampling_rate: "3s"
 # experiment specific params
 expParams:
-  qps: 2
+  consentSize: 100000
   startValue: 10
   maxLen: 300
   intervals: 10

@@ -59,14 +59,32 @@ func setupSerialExp(cnf *ExperimentConf) (Experiment, error) {
 	}
 	exp.startLength = startValue.(int)
 
-	//parse qps
-	qps, ok := cnf.ExpParams["qps"]
-	if !ok {
-		return nil, errors.New("Cannot find qps in config")
+	// before the experiment prime the consent store with some entries for
+	// added realism
+	primeSize, ok := cnf.ExpParams["consentSize"]
+	if ok {
+		primeSize, ok := primeSize.(int)
+		if !ok {
+			return nil, errors.New("consent store prime size not a valid integer value")
+		}
+		logrus.Info("Priming Consent store")
+		exp.primeConsentStore(primeSize)
 	}
-	exp.qps = qps.(int)
 
 	return exp, nil
+}
+
+func (exp SerialExp) primeConsentStore(entries int) error {
+	client, err := NewFWClient(exp.url)
+	if err != nil {
+		return err
+	}
+	for i := 0; i < entries; i++ {
+		if err := client.RevokeConsent(Context{}, RandomString(10)); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (exp SerialExp) warmup(wfId string) error {
@@ -81,11 +99,12 @@ func (exp SerialExp) warmup(wfId string) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			_, err := client.Invoke(Context{}, wfId)
+			response, err := client.Invoke(Context{}, wfId)
 			if err != nil {
 				logrus.Error(err)
 				return err
 			}
+			logrus.Info(response)
 		}
 
 	}

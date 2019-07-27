@@ -59,6 +59,7 @@ func (c FWClient) InvokeWithConsentID(ctx Context, wfID string, cId string) (*Re
 
 func (c FWClient) Invoke(ctx Context, wfID string) (*Result, error) {
 	return c.InvokeWithConsentID(ctx, wfID, RandomString(6))
+	// return c.InvokeWithConsentID(ctx, wfID, "")
 }
 
 func (c FWClient) SetupWfFromFile(ctx Context, specPath string) (string, error) {
@@ -85,4 +86,14 @@ func (c FWClient) SetupWfFromSpec(ctx Context, spec *types.WorkflowSpec) (string
 	}
 	logrus.Infof("Created Workflow (%s)", md.ID())
 	return md.ID(), nil
+}
+
+// func (c *Consent) Update(ctx context.Context, cm *types.ConsentMessage) (*empty.Empty, error) {
+func (c FWClient) RevokeConsent(ctx Context, id string) error {
+	cm := &types.ConsentMessage{
+		ID:     id,
+		Status: &types.ConsentStatus{types.ConsentStatus_REVOKED},
+	}
+	_, err := c.Consent.Update(ctx, cm)
+	return err
 }

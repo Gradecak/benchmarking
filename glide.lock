@@ -1,5 +1,5 @@
-hash: 67f31d8ed787b5ee0d607dc69d1866c33cf31cc70480aa93cd268b9010da1002
-updated: 2019-07-11T11:42:58.513456484+02:00
+hash: 088985ed859ce64ac0f52a7b03a3105773b9d54314852f32869944e6a14ce31b
+updated: 2019-07-27T18:41:44.912686488+02:00
 imports:
 - name: github.com/beorn7/perks
   version: 4b2b341e8d7715fae06375aa633dbb6e91b3fb46
@@ -9,6 +9,12 @@ imports:
   version: d8f796af33cc11cb798c1aaeb27a4ebc5099927d
   subpackages:
   - spew
+- name: github.com/gogo/protobuf
+  version: c0656edd0d9eab7c66d1eb0c568f9039345796f7
+  subpackages:
+  - gogoproto
+  - proto
+  - protoc-gen-gogo/descriptor
 - name: github.com/golang/protobuf
   version: 6c65a5562fc06764971b7c5d05c76c75e84bdbf7
   subpackages:
@@ -28,7 +34,7 @@ imports:
 - name: github.com/gorilla/mux
   version: 00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15
 - name: github.com/gradecak/fission-workflows
-  version: 5bbba3a286f7e0e62e9f11ed8d51808a85dcc185
+  version: ea1c898efa085163ea2a8bc4e2a13b1576cc5f64
   subpackages:
   - pkg/api
   - pkg/api/events
@@ -59,7 +65,7 @@ imports:
   - pkg/util/pubsub
   - pkg/version
 - name: github.com/grpc-ecosystem/grpc-gateway
-  version: bebc7374a79e1105d786ef3468b474e47d652511
+  version: ad529a448ba494a88058f9e5be0988713174ac86
   subpackages:
   - internal
   - runtime
@@ -70,8 +76,19 @@ imports:
   version: c182affec369e30f25d3eb8cd8a478dee585ae7d
   subpackages:
   - pbutil
+- name: github.com/nats-io/nats.go
+  version: 6eb6122d3827c87e99b9a095ef3667d5aedf3b37
+  subpackages:
+  - encoders/builtin
+  - util
+- name: github.com/nats-io/nkeys
+  version: 13b630ddaff0a6fe5e90ddfca4642014f84b4910
+- name: github.com/nats-io/nuid
+  version: 4b96681fa6d28dd0ab5fe79bac63b3a493d9ee94
 - name: github.com/nats-io/stan.go
-  version: fe52e0d0a602bcfcb28a1d240edba9c4574a3749
+  version: 71833a70e319f5f843347eac41bb466771b2b294
+  subpackages:
+  - pb
 - name: github.com/opentracing/opentracing-go
   version: 135aa78c6f95b4a199daf2f0470d231136cbbd0c
   subpackages:
@@ -102,7 +119,7 @@ imports:
   - internal/fs
   - internal/util
 - name: github.com/prometheus/prom2json
-  version: 63d8d642831b6d75c46715acc8722965dadb46a1
+  version: f5466e249c502a471e26b2e3497a330901b9c52d
 - name: github.com/robertkrimen/otto
   version: 15f95af6e78dcd2030d8195a138bd88d4f403546
   subpackages:
@@ -126,6 +143,7 @@ imports:
   version: 4def268fd1a49955bfb3dda92fe3db4f924f2285
   subpackages:
   - ed25519
+  - ed25519/internal/edwards25519
   - ssh/terminal
 - name: golang.org/x/net
   version: f5079bd7f6f74e23c4d65efa0f4ce14cbd6a3c0f
@@ -174,7 +192,7 @@ imports:
   - lapack/lapack64
   - mat
 - name: google.golang.org/genproto
-  version: 3bdd9d9f5532d75d09efb230bd767d265245cfe5
+  version: c506a9f9061087022822e8da603a52fc387115a8
   subpackages:
   - googleapis/api/annotations
   - googleapis/api/httpbody

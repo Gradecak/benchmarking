@@ -12,6 +12,8 @@ var exps = map[string]ExperimentConstructor{
 	"throughput": setupThroughput,
 	"wfSerial":   setupSerialExp,
 	"ttr":        setupTTRExp,
+	"ttf":        setupTTFExp,
+	"provIngest": setupProvExp,
 }
 
 type ExperimentConstructor = func(*ExperimentConf) (Experiment, error)

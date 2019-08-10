@@ -1,5 +1,5 @@
-hash: 088985ed859ce64ac0f52a7b03a3105773b9d54314852f32869944e6a14ce31b
-updated: 2019-07-27T18:41:44.912686488+02:00
+hash: b9862ae979658aa2be2663f39d4024be15223f89f976cb73e31ab8745f3b5293
+updated: 2019-08-04T19:11:35.243973012+02:00
 imports:
 - name: github.com/beorn7/perks
   version: 4b2b341e8d7715fae06375aa633dbb6e91b3fb46
@@ -31,6 +31,8 @@ imports:
   - ptypes/struct
   - ptypes/timestamp
   - ptypes/wrappers
+- name: github.com/google/uuid
+  version: 0cd6bf5da1e1c83f8b45653022c74f71af0538a4
 - name: github.com/gorilla/mux
   version: 00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15
 - name: github.com/gradecak/fission-workflows

@@ -1,4 +1,6 @@
 package: github.com/gradecak/benchmark
+ignore:
+- crypto/ed25519
 import:
 - package: github.com/sirupsen/logrus
 - package: github.com/urfave/cli
@@ -23,5 +25,5 @@ import:
   subpackages:
   - proto
 - package: github.com/nats-io/stan.go
-ignore:
-  - crypto/ed25519
+- package: github.com/google/uuid
+  version: ~1.1.1

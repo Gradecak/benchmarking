@@ -39,10 +39,10 @@ def combine_dfs(df_paths):
             li.append(df)
     frame = pd.concat(li, axis=0, ignore_index=True)
     # Cast strings to numerics
-    for qrange in quantile_range:
-        frame.loc[:,qrange] = pd.to_numeric(frame[qrange] ,errors='coerce')
-    frame.loc[:,['value']] = pd.to_numeric(frame['value'] ,errors='coerce')
-    frame.loc[:,['sum']] = pd.to_numeric(frame['sum'] ,errors='coerce')
+    # for qrange in quantile_range:
+    #     frame.loc[:,qrange] = pd.to_numeric(frame[qrange] ,errors='coerce')
+    # frame.loc[:,['value']] = pd.to_numeric(frame['value'] ,errors='coerce')
+    # frame.loc[:,['sum']] = pd.to_numeric(frame['sum'] ,errors='coerce')
     return frame
 
 

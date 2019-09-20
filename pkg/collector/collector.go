@@ -76,6 +76,66 @@ func (c *Collector) Collect(ctx context.Context, out chan *DataPoint) error {
 			for _, label := range target.Interest {
 				if mf, ok := mfs[label]; ok {
 					res.Data = append(res.Data, prom2json.NewFamily(mf))
+					logrus.Info(mf)
+				} else {
+					logrus.Warnf("Label %v not found in collected data\n", label)
+				}
+			}
+		}
+		out <- res
+	}
+}
+
+func (c *Collector) CollectUntilStable(ctx context.Context, out chan *DataPoint) error {
+	var (
+		prev   float64 = 0
+		tick           = time.NewTicker(c.rate)
+		stable         = 0
+	)
+
+	for {
+		// rate controll
+		select {
+		case <-tick.C:
+
+		case <-ctx.Done():
+			logrus.Info("Closing collector chanel")
+			close(out)
+			return nil
+		}
+		if stable == 3 {
+			close(out)
+			return nil
+		}
+		logrus.Info("Collecting State...")
+		// Sample
+		res := &DataPoint{TimeStamp: time.Now()}
+
+		for _, target := range c.targets {
+			resp, err := c.client.Get(target.Endpoint)
+			if err != nil {
+				logrus.Warn(err.Error())
+			}
+			parser := &expfmt.TextParser{}
+			mfs, err := parser.TextToMetricFamilies(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				logrus.Warn(err.Error())
+				// return err
+			}
+			// extract relevant information
+			for _, label := range target.Interest {
+				if mf, ok := mfs[label]; ok {
+					if mf.GetName() == "dispatcher_enforcment_count" {
+						if prev == mf.GetMetric()[0].GetCounter().GetValue() {
+							stable++
+						}
+						prev = mf.GetMetric()[0].GetCounter().GetValue()
+
+					}
+					logrus.Info(prev)
+					logrus.Info(stable)
+					res.Data = append(res.Data, prom2json.NewFamily(mf))
 				} else {
 					logrus.Warnf("Label %v not found in collected data\n", label)
 				}

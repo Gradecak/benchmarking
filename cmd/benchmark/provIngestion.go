@@ -61,7 +61,7 @@ func (exp ProvIngestExp) Run(ctx Context) (interface{}, error) {
 		cCtx, cancel := context.WithCancel(ctx)
 
 		//warmup experiment treatment
-		logrus.Info("Warming up QPS bracket...")
+		logrus.Infof("Warming up %v QPS bracket...", i)
 		err := exp.warmupBracket(i, provGen)
 		if err != nil {
 			panic(err)
@@ -77,7 +77,11 @@ func (exp ProvIngestExp) Run(ctx Context) (interface{}, error) {
 		c, _ := context.WithDeadline(ctx, time.Now().Add(BRACKET_DURATION))
 		ticker := time.NewTicker(time.Duration(1e9 / i))
 		wg := sync.WaitGroup{}
-		go exp.collector.Collect(cCtx, collectorChan)
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			exp.collector.CollectUntilStable(cCtx, collectorChan)
+			wg.Done()
+		}(&wg)
 		logrus.Info("Starting Experiment...")
 		func() {
 			for {

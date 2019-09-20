@@ -131,10 +131,8 @@ func (c *Collector) CollectUntilStable(ctx context.Context, out chan *DataPoint)
 							stable++
 						}
 						prev = mf.GetMetric()[0].GetCounter().GetValue()
-
+						logrus.Infof("previous %v ~~ %v stable", prev, stable)
 					}
-					logrus.Info(prev)
-					logrus.Info(stable)
 					res.Data = append(res.Data, prom2json.NewFamily(mf))
 				} else {
 					logrus.Warnf("Label %v not found in collected data\n", label)

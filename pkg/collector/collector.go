@@ -127,12 +127,12 @@ func (c *Collector) CollectUntilStable(ctx context.Context, out chan *DataPoint)
 			for _, label := range target.Interest {
 				if mf, ok := mfs[label]; ok {
 					if mf.GetName() == "dispatcher_enforcment_count" {
+						logrus.Infof("previous %v ~~ %v current (%v stable)", prev, mf.GetMetric()[0].GetCounter().GetValue(), stable)
 						if prev == mf.GetMetric()[0].GetCounter().GetValue() {
 							stable++
 						} else {
 							prev = mf.GetMetric()[0].GetCounter().GetValue()
 						}
-						logrus.Infof("previous %v ~~ %v current (%v stable)", prev, mf.GetMetric()[0].GetCounter().GetValue(), stable)
 					}
 					res.Data = append(res.Data, prom2json.NewFamily(mf))
 				} else {

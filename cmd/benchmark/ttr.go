@@ -2,26 +2,34 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"github.com/golang/protobuf/proto"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
-	"github.com/gradecak/benchmark/pkg/collector"
-	"github.com/gradecak/fission-workflows/pkg/types"
 	stan "github.com/nats-io/stan.go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/prom2json"
 	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
+
+	"github.com/gradecak/benchmark/pkg/collector"
+	"github.com/gradecak/benchmark/pkg/provenance"
+	"github.com/gradecak/fission-workflows/pkg/provenance/graph"
+	"github.com/gradecak/fission-workflows/pkg/types"
+
+	"strconv"
+	"sync"
+	// "strings"
 )
 
 type TTRExperiment struct {
 	// exp constants
-	wfSpecPath    string
-	url           string
-	expLabel      string
-	maxGraphSize  int
-	graphStepSize int
+	url          string
+	expLabel     string
+	GraphSize    int
+	MaxQPS       int
+	QPSIntervals int
 
 	// Event stream config
 	natsURL     string
@@ -39,80 +47,150 @@ type TTRResult struct {
 }
 
 func setupTTRExp(cnf *ExperimentConf) (Experiment, error) {
+	var (
+		maxQPS      int
+		qpsInterval int
+		graphSize   int
+		ok          bool
+	)
+
+	if maxQPS, ok = cnf.ExpParams["maxQPS"].(int); !ok {
+		return nil, errors.New("Invalid maxQPS value in config")
+	}
+
+	if qpsInterval, ok = cnf.ExpParams["qpsInterval"].(int); !ok {
+		return nil, errors.New("Invalid qps interval value in config")
+	}
+
+	if graphSize, ok = cnf.ExpParams["graphSize"].(int); !ok {
+		return nil, errors.New("Invalid graph size value in config")
+	}
+
 	return TTRExperiment{
-		wfSpecPath:    cnf.WfSpec,
-		url:           cnf.Url,
-		expLabel:      cnf.ExpLabel,
-		maxGraphSize:  100,
-		graphStepSize: 10,
-		natsURL:       "127.0.0.1",
-		natsCluster:   "test-cluster",
-		collector:     cnf.collector,
+		url:          cnf.Url,
+		expLabel:     cnf.ExpLabel,
+		GraphSize:    graphSize,
+		MaxQPS:       maxQPS,
+		QPSIntervals: qpsInterval,
+		natsURL:      "127.0.0.1",
+		natsCluster:  "test-cluster",
+		collector:    cnf.collector,
 	}, nil
 }
 
-func (exp TTRExperiment) Run(c Context) (interface{}, error) {
-	// output := []TTRResult{}
-	// create and start the dummy http service to emulate data deletion endpoint
-	ctx, cancel := context.WithCancel(c)
-	ss := newSimpleService()
-	go ss.run(":9999", ctx)
+func (exp TTRExperiment) warmup(qps int, ss *simpleService) error {
+	ticker := time.NewTicker(time.Duration(1e9 / qps)) //consentInjector.Revoke(cId)
+	// start collecting data
+	bracketTimer, can := context.WithDeadline(context.TODO(), time.Now().Add(WARMUP_DURATION))
+	defer can()
+	wg := sync.WaitGroup{}
+	func() {
+		for {
+			select {
+			case <-ticker.C:
+				wg.Add(1)
+				go func(wg *sync.WaitGroup) {
+					defer wg.Done()
+					ss.revoke()
+				}(&wg)
+			case <-bracketTimer.Done():
+				return
+			}
+		}
+	}()
+	wg.Wait()
+	return nil
+}
 
-	// collector state variables
-	// stateChan := make(chan *collector.DataPoint, exp.collector.GetRate()+10000)
-	// collectorContext, collectorCancel := context.WithCancel(c)
+func (exp TTRExperiment) Run(c Context) (interface{}, error) {
+
+	var (
+		output  = []TTRResult{}
+		cIds    = []string{}
+		provGen = provenance.NewGenerator()
+	)
 
 	//event stream
-	eventInjector, err := NewEventInjector(exp.natsCluster, exp.natsURL, "CONSENT")
+	provInjector, err := NewEventInjector(exp.natsCluster, exp.natsURL, "PROVENANCE")
+	consentInjector, err := NewEventInjector(exp.natsCluster, exp.natsURL, "CONSENT")
 	if err != nil {
 		return nil, err
 	}
+	ctx, cancel := context.WithCancel(c)
 
-	cIds := []string{}
-	total := 0
-	for i := exp.graphStepSize; i < exp.maxGraphSize; i += exp.graphStepSize {
-		// prime the provenance graph
-		log.Infof("Current Bracket %d", i)
-		client, err := NewFWClient(exp.url)
+	//prime the graph
+
+	log.Info("Priming Consent Graph")
+	for j := 0; j < exp.GraphSize; j++ {
+		cId := uuid.New().String()
+		cIds = append(cIds, cId)
+		provEvent := provGen.NewProv(&provenance.Cnf{
+			ID:     cId,
+			NTasks: 1,
+			TaskNodes: &graph.Node{
+				Type: graph.Node_TASK,
+				Op:   graph.Node_WRITE,
+				Meta: "http://localhost:9999/done",
+			},
+		})
+		err := provInjector.InjectProv(provEvent)
 		if err != nil {
+			log.Error(err)
 			return nil, err
 		}
-		for j := 0; j < i; j++ {
-			wfID, err := client.SetupWfFromFile(c, exp.wfSpecPath)
-			if err != nil {
-				return nil, err
-			}
-			cId := RandomString(10)
-			cIds = append(cIds, cId)
-			client.InvokeWithConsentID(c, wfID, cId)
-		}
-
-		// start collecting data
-		// go exp.collector.Collect(collectorContext, stateChan)
-
-		total += i
-		ticker := time.NewTicker(time.Second / 2) //eventInjector.Revoke(cId)
-		//start measuring
-		for _, cId := range cIds {
-			select {
-			case <-ticker.C:
-				eventInjector.Revoke(cId)
-				ss.revoke(cId)
-			}
-
-			//results to output
-			// for r := range stateChan {
-			// 	for _, fam := range r.Data {
-			// 		output = append(output,
-			// 			TTRResult{i, r.TimeStamp, fam, exp.expLabel})
-			// 	}
-			// }
-		}
 	}
+	log.Info("Sleeping for 2 minutes before begingin experiment")
+	time.Sleep(time.Minute*1 + time.Second*30)
+	// create and start the dummy http service to emulate data deletion endpoint
+	ss := newSimpleService(consentInjector, cIds)
+	go ss.run(":9999", ctx)
 
-	time.Sleep(time.Minute)
+	for qps := exp.QPSIntervals; qps <= exp.MaxQPS; qps += exp.QPSIntervals {
+		// collector state variables
+		stateChan := make(chan *collector.DataPoint,
+			(BRACKET_DURATION/time.Second)/exp.collector.GetRate()+1000)
+
+		collectorContext, collectorCancel := context.WithCancel(c)
+		// prime the provenance graph
+		log.Infof("Warming up brakcet  %d", qps)
+		// warmup the QPS Bracket
+		exp.warmup(qps, ss)
+		log.Infof("Starting Bracket %d", qps)
+		ticker := time.NewTicker(time.Duration(1e9 / qps)) //consentInjector.Revoke(cId)
+		// start collecting data
+		bracketTimer, can := context.WithDeadline(c, time.Now().Add(BRACKET_DURATION))
+		go exp.collector.Collect(collectorContext, stateChan)
+		wg := sync.WaitGroup{}
+		func() {
+			for {
+				select {
+				case <-ticker.C:
+					wg.Add(1)
+					go func(wg *sync.WaitGroup) {
+						defer wg.Done()
+						ss.revoke()
+					}(&wg)
+				case <-bracketTimer.Done():
+					return
+				}
+			}
+		}()
+
+		wg.Wait()
+		can()
+		collectorCancel()
+		//results to output
+		log.Infof("Collecting results for %v bracket...\n", qps)
+		for r := range stateChan {
+			for _, fam := range r.Data {
+				output = append(output,
+					TTRResult{qps, r.TimeStamp, fam, exp.expLabel})
+			}
+		}
+		log.Info("Done")
+	}
 	cancel()
-	return nil, nil
+	return output, nil
 }
 
 // ************************************************************ //
@@ -120,11 +198,25 @@ func (exp TTRExperiment) Run(c Context) (interface{}, error) {
 // ************************************************************ //
 
 type simpleService struct {
-	times map[string]time.Time
+	ids           []string
+	index         int
+	indexMu       *sync.Mutex
+	outstanding   uint
+	outstandingMu *sync.RWMutex
+	injector      *eventInjector
 }
 
-func newSimpleService() *simpleService {
-	return &simpleService{make(map[string]time.Time)}
+func newSimpleService(i *eventInjector, cids []string) *simpleService {
+	log.Infof("Number of ids %v", len(cids))
+	log.Infof("%v \n %v \n %v", cids[0], cids[1], cids[2])
+	return &simpleService{
+		ids:           cids,
+		index:         0,
+		indexMu:       &sync.Mutex{},
+		outstanding:   0,
+		outstandingMu: &sync.RWMutex{},
+		injector:      i,
+	}
 }
 
 func (ss *simpleService) run(url string, c context.Context) {
@@ -163,24 +255,32 @@ func (ss *simpleService) run(url string, c context.Context) {
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
-
 }
 
-func (ss simpleService) revoke(consentID string) {
-	ss.times[consentID] = time.Now()
+func (ss *simpleService) revoke() {
+	//pop from list of available
+	ss.indexMu.Lock()
+	consentID := ss.ids[ss.index]
+	ss.index = ss.index + 1
+	if ss.index == len(ss.ids) {
+		ss.index = 0
+	}
+	ss.indexMu.Unlock()
+	t := time.Now().UnixNano()
+	query := consentID + "/$/" + strconv.FormatInt(t, 10)
+	ss.injector.Revoke(query)
 }
 
-func (ss simpleService) Done(sumVec prometheus.Summary) http.HandlerFunc {
+func (ss *simpleService) Done(sumVec prometheus.Summary) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		log.Info("Revoked")
 		vars := mux.Vars(r)
-		consentID := vars["consentID"]
-		// record time that the revocation request came in
-		if startTime, ok := ss.times[consentID]; ok {
-			sumVec.Observe(float64(time.Since(startTime)))
+		unixString := vars["consentID"]
+		unixInt, err := strconv.ParseInt(unixString, 10, 64)
+		if err != nil {
+			panic(err)
 		}
-		greet := fmt.Sprintf("Hello %s \n", consentID)
-		w.Write([]byte(greet))
+		startTime := time.Unix(0, unixInt)
+		sumVec.Observe(float64(time.Since(startTime)))
 	}
 }
 
@@ -210,6 +310,15 @@ func (i *eventInjector) Revoke(consentID string) error {
 	}
 
 	buf, err := proto.Marshal(consentMsg)
+	if err != nil {
+		return err
+	}
+	i.Publish(i.prefix, buf)
+	return nil
+}
+
+func (i *eventInjector) InjectProv(pg *graph.Provenance) error {
+	buf, err := proto.Marshal(pg)
 	if err != nil {
 		return err
 	}

@@ -11,6 +11,7 @@ type Cnf struct {
 	ID          string
 	NTasks      int
 	Predecessor int64
+	TaskNodes   *graph.Node
 }
 
 type Gen struct {
@@ -40,7 +41,17 @@ func (g *Gen) NewProv(cnf *Cnf) *graph.Provenance {
 	// add workflow tasks
 	wfTasks := &graph.IDs{[]int64{}}
 	for i := 0; i < cnf.NTasks; i++ {
-		id, node := g.genTaskNode()
+		var (
+			id   int64
+			node *graph.Node
+		)
+		if cnf.TaskNodes != nil {
+			id = g.rand.Int63()
+			node = cnf.TaskNodes
+		} else {
+			id, node = g.genTaskNode()
+		}
+
 		provenance.Nodes[id] = node
 		wfTasks.Ids = append(wfTasks.Ids, id)
 	}

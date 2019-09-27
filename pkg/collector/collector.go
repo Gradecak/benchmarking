@@ -76,7 +76,7 @@ func (c *Collector) Collect(ctx context.Context, out chan *DataPoint) error {
 			for _, label := range target.Interest {
 				if mf, ok := mfs[label]; ok {
 					res.Data = append(res.Data, prom2json.NewFamily(mf))
-					logrus.Info(mf)
+					// logrus.Info(mf)
 				} else {
 					logrus.Warnf("Label %v not found in collected data\n", label)
 				}

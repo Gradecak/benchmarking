@@ -5,16 +5,14 @@ wfSpec: "./specs/1task.wf.yml"
 outputFile: "results/exp7.csv"
 collector:
   collectors:
-    - endpoint: "http://localhost:8080/metrics"
+    - endpoint: "http://localhost:9999/metrics"
       interest:
-        # - "system_controller_exec_duration"
-        - "invocation_monitor_time"
-        - "go_memstats_alloc_bytes"
-        - "workflows_scheduler_eval_time"
-        - "fes_cache_current_cache_counts"
-        - "workflows_fnenv_functions_active"
-        - "system_controller_concurrent"
+        - "policy_recovery_time"
     # - endpoint: "http://localhost:9090/metrics"
     #   interest:
     #     - "container_network_transmit_bytes_total"
-  sampling_rate: "3s"
+  sampling_rate: "100ms"
+expParams:
+  maxQPS: 300
+  qpsInterval: 10
+  graphSize: 10000

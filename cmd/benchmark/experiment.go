@@ -14,6 +14,7 @@ var exps = map[string]ExperimentConstructor{
 	"ttr":        setupTTRExp,
 	"ttf":        setupTTFExp,
 	"provIngest": setupProvExp,
+	"policy":     setupPolicyExp,
 }
 
 type ExperimentConstructor = func(*ExperimentConf) (Experiment, error)

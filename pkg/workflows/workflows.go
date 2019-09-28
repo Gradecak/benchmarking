@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/gradecak/fission-workflows/pkg/types"
 	"github.com/gradecak/fission-workflows/pkg/types/typedvalues"
 	"github.com/sirupsen/logrus"
@@ -20,7 +21,8 @@ type WorkflowConfig struct {
 	ProvMeta             map[string]interface{}
 	PercentMultienvTasks float32
 	TaskRuntime          string
-	//TODO task zone locking/hinting
+
+	RandomTaskName bool
 }
 
 func NewWorkflow(parallel, serial int, wfConf *WorkflowConfig) *types.WorkflowSpec {
@@ -39,7 +41,13 @@ func NewWorkflow(parallel, serial int, wfConf *WorkflowConfig) *types.WorkflowSp
 		// check how many tasks in the workflow need to be multienv
 		// create the tasks
 		for j := 0; j < parallel; j++ {
-			taskName := fmt.Sprintf(TASK_NAME, (i*parallel + (j + 1)))
+			var taskName string
+			if wfConf.RandomTaskName {
+				taskName = uuid.New().String()
+			} else {
+				taskName = fmt.Sprintf(TASK_NAME, (i*parallel + (j + 1)))
+			}
+
 			if i > 0 {
 				tasks[i][taskName] = newTask(tasks[i-1], taskName)
 			} else {

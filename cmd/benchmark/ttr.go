@@ -72,7 +72,7 @@ func setupTTRExp(cnf *ExperimentConf) (Experiment, error) {
 		GraphSize:    graphSize,
 		MaxQPS:       maxQPS,
 		QPSIntervals: qpsInterval,
-		natsURL:      "127.0.0.1",
+		natsURL:      cnf.Url,
 		natsCluster:  "test-cluster",
 		collector:    cnf.collector,
 	}, nil

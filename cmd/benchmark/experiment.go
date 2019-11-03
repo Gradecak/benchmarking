@@ -2,19 +2,21 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+
 	"github.com/gradecak/benchmark/pkg/collector"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 )
 
 var exps = map[string]ExperimentConstructor{
-	"throughput": setupThroughput,
-	"wfSerial":   setupSerialExp,
-	"ttr":        setupTTRExp,
-	"ttf":        setupTTFExp,
-	"provIngest": setupProvExp,
-	"policy":     setupPolicyExp,
+	"throughput":   setupThroughput,
+	"wfSerial":     setupSerialExp,
+	"ttr":          setupTTRExp,
+	"ttf":          setupTTFExp,
+	"provIngest":   setupProvExp,
+	"policyUnique": setupPolicyUniqueExp,
+	"policy":       setupPolicyExp,
 }
 
 type ExperimentConstructor = func(*ExperimentConf) (Experiment, error)

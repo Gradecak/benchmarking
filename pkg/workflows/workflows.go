@@ -2,6 +2,7 @@ package workflows
 
 import (
 	"fmt"
+
 	"github.com/google/uuid"
 	"github.com/gradecak/fission-workflows/pkg/types"
 	"github.com/gradecak/fission-workflows/pkg/types/typedvalues"
@@ -44,6 +45,7 @@ func NewWorkflow(parallel, serial int, wfConf *WorkflowConfig) *types.WorkflowSp
 			var taskName string
 			if wfConf.RandomTaskName {
 				taskName = uuid.New().String()
+				outputTask = taskName
 			} else {
 				taskName = fmt.Sprintf(TASK_NAME, (i*parallel + (j + 1)))
 			}

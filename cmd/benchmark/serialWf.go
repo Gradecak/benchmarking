@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+	"time"
+
 	"github.com/gradecak/benchmark/pkg/collector"
 	"github.com/gradecak/benchmark/pkg/workflows"
 	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
-	"time"
 )
 
 type SerialExp struct {

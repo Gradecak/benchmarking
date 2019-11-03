@@ -1,0 +1,16 @@
+url: "127.0.0.1:5555"
+expName: "ttf"
+expLabel: "time-to-violation-20"
+outputFile: "results/ttf20.csv"
+collector:
+  collectors:
+    - endpoint: "http://localhost:8080/metrics"
+      interest:
+        # - "system_controller_exec_duration"
+        - "invocation_monitor_time"
+        - "go_memstats_alloc_bytes"
+        - "workflows_scheduler_eval_time"
+        - "fes_cache_current_cache_counts"
+        - "workflows_fnenv_functions_active"
+        - "system_controller_concurrent"
+  sampling_rate: "3s"

@@ -1,0 +1,22 @@
+url: "127.0.0.1:5555"
+expName: "ttf"
+expLabel: "time-to-violation"
+wfSpec: "./specs/1task.wf.yml"
+outputFile: "results/ttf-5z.csv"
+collector:
+  collectors:
+    - endpoint: "http://localhost:8080/metrics"
+      interest:
+        - "system_controller_concurrent"
+  sampling_rate: "3s"
+expParams:
+  numTasks: 10
+  runsPerWf: 100
+  simfaasUrl: "http://127.0.0.1:9000"
+  proxyUrl: ":9999"
+  zones:
+    - "nl"
+    - "ir"
+    - "de"
+    - "fr"
+    - "au"

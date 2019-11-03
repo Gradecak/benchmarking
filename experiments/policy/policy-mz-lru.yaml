@@ -1,0 +1,18 @@
+url: "127.0.0.1:5555"
+expName: "policy"
+expLabel: "policy-warm-mz-lru"
+wfSpec: "./specs/1task.wf.yml"
+outputFile: "results/policy-warm-mz-lru"
+collector:
+  collectors:
+    - endpoint: "http://localhost:8080/metrics"
+      interest:
+        - "workflows_scheduler_eval_time"
+        - "invocation_monitor_time"
+  sampling_rate: "3s"
+expParams:
+  mz: 1
+  simfaasUrl: "http://127.0.0.1:9000"
+  poolSize: 20
+  qps: 10
+  coldStart: 20

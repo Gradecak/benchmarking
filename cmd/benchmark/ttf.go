@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/gradecak/benchmark/pkg/workflows"
-	"github.com/gradecak/fission-workflows/pkg/types"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/gradecak/benchmark/pkg/workflows"
+	"github.com/gradecak/fission-workflows/pkg/types"
+	"github.com/sirupsen/logrus"
 )
 
 var Zones = []string{}

@@ -3,14 +3,15 @@ package main
 import (
 	"context"
 	"errors"
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/gradecak/benchmark/pkg/clients"
 	"github.com/gradecak/benchmark/pkg/collector"
 	"github.com/gradecak/benchmark/pkg/provenance"
 	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
-	"math/rand"
-	"sync"
-	"time"
 )
 
 type ProvIngestExp struct {

@@ -1,13 +1,16 @@
 url: "127.0.0.1:4222"
 expName: "provIngest"
 expLabel: "time-to-violation"
-outputFile: "results/ingestProv.csv"
+outputFile: "results/ingestProv1.csv"
 collector:
   collectors:
     - endpoint: "http://localhost:5352/metrics"
       interest:
-        - "dispatcher_enforcment_time"
+        - "dispatcher_enforce_time"
+        - "dispatcher_total_time"
+        - "dispatcher_enforcment_count"
+        - "dispatcher_concurrent_enforcers"
   sampling_rate: "3s"
 expParams:
-  maxQPS: 400
-  qpsInterval: 20
+  maxQPS: 700
+  qpsInterval: 100

@@ -2,14 +2,15 @@ package main
 
 import (
 	"context"
+	"math/rand"
+	"os"
+	"time"
+
 	"github.com/gradecak/fission-workflows/pkg/apiserver"
 	"github.com/gradecak/fission-workflows/pkg/parse/yaml"
 	"github.com/gradecak/fission-workflows/pkg/types"
 	"github.com/gradecak/fission-workflows/pkg/types/typedvalues"
 	"github.com/sirupsen/logrus"
-	"math/rand"
-	"os"
-	"time"
 )
 
 const (

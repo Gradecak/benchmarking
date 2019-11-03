@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
 	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 func main() {

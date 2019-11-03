@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"errors"
+	"sync"
+	"time"
+
 	"github.com/gradecak/benchmark/pkg/collector"
 	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
-	"sync"
-	"time"
 )
 
 const (

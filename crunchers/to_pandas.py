@@ -49,6 +49,8 @@ def plot_throughput(df):
     # ax.set(xlabel="QPS", ylabel="Latency (ms)")
     # ax.legend([x[10:] for x in quantile_range])
 
+#def plot_througput_old(df):
+
 
 
 def plot_mem(df):

@@ -1,0 +1,17 @@
+url: "127.0.0.1:5555"
+expName: "policy-unique"
+expLabel: "policy-unique-horizon-mz-rr"
+wfSpec: "./specs/1task.wf.yml"
+outputFile: "results/policy-unique-horizon-mz-rr.csv"
+collector:
+  collectors:
+    - endpoint: "http://localhost:8080/metrics"
+      interest:
+        - "workflows_scheduler_eval_time"
+        - "invocation_monitor_time"
+  sampling_rate: "3s"
+expParams:
+  simfaasUrl: "http://127.0.0.1:9000"
+  poolSize: 10
+  qps: 10
+  coldStart: 20

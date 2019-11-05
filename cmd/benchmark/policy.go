@@ -85,18 +85,33 @@ func (exp PolicyExp) SetColdStart(duration time.Duration) error {
 }
 
 func (exp PolicyExp) warmup(wfPool []string) error {
+	ticker := time.NewTicker(time.Duration(1e9 / exp.throughput))
 	client, err := NewFWClient(exp.url)
 	if err != nil {
 		return err
 	}
 	wg := &sync.WaitGroup{}
-	for _, wf := range wfPool {
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, id string) {
-			defer wg.Done()
-			client.Invoke(Context{}, id)
-		}(wg, wf)
-	}
+	wfIndex := 0
+	func() {
+		for {
+			select {
+			case <-ticker.C:
+				wg.Add(1)
+				go func(wg *sync.WaitGroup, i int) {
+					defer wg.Done()
+					_, err := client.Invoke(Context{}, wfPool[i])
+					if err != nil {
+						logrus.Error(err)
+						return
+					}
+				}(wg, wfIndex)
+				wfIndex++
+				if wfIndex == exp.poolSize {
+					return
+				}
+			}
+		}
+	}()
 	wg.Wait()
 	return nil
 }
@@ -131,8 +146,9 @@ func (exp PolicyExp) Run(c Context) (interface{}, error) {
 			wfPool[i] = wfId
 		}
 		wfIndex := 0
-		err := exp.SetColdStart(coldStart)
+		err = exp.SetColdStart(1)
 		exp.warmup(wfPool)
+		err = exp.SetColdStart(coldStart)
 		if err != nil {
 			logrus.Errorf("Error setting cold start (reason %v)", err)
 			return nil, err

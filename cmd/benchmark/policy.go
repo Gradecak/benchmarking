@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/gradecak/benchmark/pkg/collector"
+	"github.com/gradecak/benchmark/pkg/fnwarmer"
 	"github.com/gradecak/benchmark/pkg/workflows"
 )
 
@@ -23,6 +24,7 @@ type PolicyExp struct {
 	expLabel     string
 	maxColdStart time.Duration
 	collector    *collector.Collector
+	warmer       *fnwarmer.Warmer
 }
 
 type PolicyResult struct {
@@ -63,6 +65,7 @@ func setupPolicyExp(cnf *ExperimentConf) (Experiment, error) {
 		maxColdStart: time.Second * time.Duration(coldStart),
 		expLabel:     cnf.ExpLabel,
 		collector:    cnf.collector,
+		warmer:       fnwarmer.New(simfaasUrl),
 	}, nil
 }
 
@@ -84,38 +87,6 @@ func (exp PolicyExp) SetColdStart(duration time.Duration) error {
 	return nil
 }
 
-func (exp PolicyExp) warmup(wfPool []string) error {
-	ticker := time.NewTicker(time.Duration(1e9 / exp.throughput))
-	client, err := NewFWClient(exp.url)
-	if err != nil {
-		return err
-	}
-	wg := &sync.WaitGroup{}
-	wfIndex := 0
-	func() {
-		for {
-			select {
-			case <-ticker.C:
-				wg.Add(1)
-				go func(wg *sync.WaitGroup, i int) {
-					defer wg.Done()
-					_, err := client.Invoke(Context{}, wfPool[i])
-					if err != nil {
-						logrus.Error(err)
-						return
-					}
-				}(wg, wfIndex)
-				wfIndex++
-				if wfIndex == exp.poolSize {
-					return
-				}
-			}
-		}
-	}()
-	wg.Wait()
-	return nil
-}
-
 func (exp PolicyExp) Run(c Context) (interface{}, error) {
 	var (
 		output = []PolicyResult{}
@@ -133,12 +104,22 @@ func (exp PolicyExp) Run(c Context) (interface{}, error) {
 	//run
 	for coldStart := time.Second; coldStart <= exp.maxColdStart; coldStart = coldStart + time.Second {
 		// setup pool of workflow specs
+		err = exp.SetColdStart(0)
+		if err != nil {
+			logrus.Errorf("Error setting cold start (reason %v)", err)
+			return nil, err
+		}
 		for i, _ := range wfPool {
 			wfSpec := workflows.NewWorkflow(1, 3, &workflows.WorkflowConfig{
 				TaskRuntime:          "1",
 				RandomTaskName:       true,
 				PercentMultienvTasks: exp.pmultizone,
 			})
+			err := exp.warmer.WarmupTasks(wfSpec)
+			if err != nil {
+				logrus.Errorf("Errror warming up task specs %v \n", err)
+				return nil, err
+			}
 			wfId, err := client.SetupWfFromSpec(c, wfSpec)
 			if err != nil {
 				logrus.Panic(err)
@@ -146,8 +127,6 @@ func (exp PolicyExp) Run(c Context) (interface{}, error) {
 			wfPool[i] = wfId
 		}
 		wfIndex := 0
-		err = exp.SetColdStart(1)
-		exp.warmup(wfPool)
 		err = exp.SetColdStart(coldStart)
 		if err != nil {
 			logrus.Errorf("Error setting cold start (reason %v)", err)

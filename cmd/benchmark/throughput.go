@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gradecak/benchmark/pkg/collector"
+	"github.com/gradecak/benchmark/pkg/workflows"
 	"github.com/prometheus/prom2json"
 	"github.com/sirupsen/logrus"
 )
@@ -68,7 +69,12 @@ func setupThroughput(cnf *ExperimentConf) (Experiment, error) {
 	if err != nil {
 		return nil, err
 	}
-	wfID, err := client.SetupWfFromFile(Context{}, cnf.WfSpec)
+	wfSpec := workflows.NewWorkflow(1, 1, &workflows.WorkflowConfig{
+		TaskRuntime:          "1",
+		PercentMultienvTasks: 1,
+	})
+	wfID, err := client.SetupWfFromSpec(Context{}, wfSpec)
+	// wfID, err := client.SetupWfFromFile(Context{}, cnf.WfSpec)
 	if err != nil {
 		return nil, err
 	}
